@@ -3,9 +3,14 @@ variable "aws_region" {
   default = "us-east-1"
 }
 
+variable "environment" {
+  description = "Deployment environment (dev or prod). Set per env in tfvars."
+  type        = string
+}
+
 variable "input_bucket" {
-  type    = string
-  default = "some-bucket"
+  description = "Name of the input S3 bucket. Must be globally unique per env."
+  type        = string
 }
 
 variable "instance_type" {

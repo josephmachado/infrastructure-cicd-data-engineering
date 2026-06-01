@@ -14,6 +14,7 @@ permissions:
 jobs:
   # ──────────────────────────────────────────────────────────────
   # PR: static checks + plan  (NO apply)
+  # Plans against DEV state — merge applies to dev first.
   # ──────────────────────────────────────────────────────────────
   validate-and-plan:
     name: Validate & Plan
@@ -38,13 +39,14 @@ jobs:
       - name: Format check
         run: terraform -chdir=terraform fmt -check -recursive
 
+      # Init against the dev state key (partial backend config).
       - name: Init
-        run: terraform -chdir=terraform init -input=false
+        run: terraform -chdir=terraform init -input=false -backend-config="key=dev/terraform.tfstate"
 
       - name: Validate
         run: terraform -chdir=terraform validate
 
-      # --- plan ---
+      # --- plan (dev) ---
       - name: Plan
         id: plan
         run: |
@@ -57,7 +59,7 @@ jobs:
           script: |
             const fs = require('fs');
             const plan = fs.readFileSync('plan.txt', 'utf8');
-            const body = `### Terraform Plan\n\`\`\`\n${plan.slice(0, 60000)}\n\`\`\``;
+            const body = `### Terraform Plan (dev)\n\`\`\`\n${plan.slice(0, 60000)}\n\`\`\``;
             github.rest.issues.createComment({
               issue_number: context.issue.number,
               owner: context.repo.owner,
