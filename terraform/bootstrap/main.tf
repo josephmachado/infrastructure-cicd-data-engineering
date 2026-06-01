@@ -4,10 +4,6 @@ terraform {
       source  = "hashicorp/aws"
       version = "~> 5.92"
     }
-    local = {
-      source  = "hashicorp/local"
-      version = "~> 2.0"
-    }
   }
 
   required_version = ">= 1.2"
@@ -69,14 +65,60 @@ resource "aws_iam_role_policy" "github_actions" {
 }
 
 # ----------------------------------------
+# S3 bucket for Terraform remote state
+# ----------------------------------------
+# Created here in bootstrap so the MAIN infra (the terraform/ dir) can use it
+# as its backend. Bootstrap itself uses a local backend to avoid chicken-and-egg.
+
+resource "aws_s3_bucket" "tf_state" {
+  bucket = "jkm-cicd-iac-state"
+}
+
+# Versioning lets you recover a previous state file if one gets corrupted.
+resource "aws_s3_bucket_versioning" "tf_state" {
+  bucket = aws_s3_bucket.tf_state.id
+  versioning_configuration {
+    status = "Enabled"
+  }
+}
+
+# Encrypt state at rest (state can contain sensitive values).
+resource "aws_s3_bucket_server_side_encryption_configuration" "tf_state" {
+  bucket = aws_s3_bucket.tf_state.id
+  rule {
+    apply_server_side_encryption_by_default {
+      sse_algorithm = "AES256"
+    }
+  }
+}
+
+# State must never be public.
+resource "aws_s3_bucket_public_access_block" "tf_state" {
+  bucket                  = aws_s3_bucket.tf_state.id
+  block_public_acls       = true
+  block_public_policy     = true
+  ignore_public_acls      = true
+  restrict_public_buckets = true
+}
+
+# ----------------------------------------
 # Outputs
 # ----------------------------------------
 
+output "tf_state_bucket" {
+  description = "S3 bucket for storing Terraform state."
+  value       = aws_s3_bucket.tf_state.id
+}
+
 output "aws_role_arn" {
-  value = aws_iam_role.github_actions.arn
+  description = "Paste this into GitHub as the AWS_ROLE_ARN secret."
+  value       = aws_iam_role.github_actions.arn
 }
 
 resource "local_file" "outputs" {
   filename = "${path.module}/outputs.txt"
-  content  = "aws_role_arn = ${aws_iam_role.github_actions.arn}\n"
+  content  = <<-EOT
+    aws_role_arn    = ${aws_iam_role.github_actions.arn}
+    tf_state_bucket = ${aws_s3_bucket.tf_state.id}
+  EOT
 }
