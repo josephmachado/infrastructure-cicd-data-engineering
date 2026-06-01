@@ -8,4 +8,8 @@ terraform -chdir=terraform/bootstrap apply
 terraform -chdir=terraform/bootstrap output
 ```
 
+Create a repo secret as AWS_ROLE_ARN
+![Create Repo Secret](actions-secret.png)
+
+
 
