@@ -1,3 +1,12 @@
+* [README](#readme)
+    * [Setup](#setup)
+        * [Prerequisites](#prerequisites)
+        * [Bootstrap](#bootstrap)
+        * [Grant GitHub Access Permission to Deploy to AWS](#grant-github-access-permission-to-deploy-to-aws)
+        * [Create a GitHub Environment](#create-a-github-environment)
+    * [CI checks](#ci-checks)
+    * [Destroy](#destroy)
+
 # README 
 
 Code for the blog: [](https://www.startdataengineering.com/post/infrastructure-cicd-data-engineering/)
