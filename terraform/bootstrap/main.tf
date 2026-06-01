@@ -72,6 +72,7 @@ resource "aws_iam_role_policy" "github_actions" {
 
 resource "aws_s3_bucket" "tf_state" {
   bucket = "jkm-cicd-iac-state"
+  force_destroy = true
 }
 
 # Versioning lets you recover a previous state file if one gets corrupted.
