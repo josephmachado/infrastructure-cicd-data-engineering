@@ -5,7 +5,12 @@ terraform {
       version = "~> 5.92"
     }
   }
-
+  backend "s3" {
+    bucket  = "jkm-cicd-iac-state"
+    key     = "infra/terraform.tfstate"
+    region  = "us-east-1"
+    encrypt = true
+  }
   required_version = ">= 1.2"
 }
 
@@ -18,7 +23,7 @@ provider "aws" {
 # ----------------------------------------
 
 resource "aws_s3_bucket" "input_bucket" {
-  bucket        = "sde-iac-tutorial-bucket"
+  bucket        = var.input_bucket
   force_destroy = true
 }
 

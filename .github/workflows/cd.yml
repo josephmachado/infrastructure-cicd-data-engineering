@@ -1,0 +1,82 @@
+name: CD
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+  id-token: write
+
+env:
+  TF_VERSION: "1.9.0"
+
+jobs:
+  # ──────────────────────────────────────────────────────────────
+  # Job 1: apply to dev + generate the prod plan for review (no gate)
+  # ──────────────────────────────────────────────────────────────
+  dev-and-prod-plan:
+    name: Deploy Dev & Plan Prod
+    runs-on: ubuntu-latest
+    environment: dev
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: us-east-1
+
+      - name: Init
+        run: terraform -chdir=terraform init -input=false
+
+      - name: Apply (dev)
+        run: terraform -chdir=terraform apply -input=false -auto-approve -var-file=envs/dev.tfvars
+
+      # Fresh prod plan, printed to the job summary so the reviewer can
+      # read the diff before approving the apply job.
+      - name: Plan (prod)
+        run: |
+          terraform -chdir=terraform plan -input=false -var-file=envs/prod.tfvars -no-color | tee prod-plan.txt
+          echo '### Prod Terraform Plan' >> "$GITHUB_STEP_SUMMARY"
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
+          cat prod-plan.txt >> "$GITHUB_STEP_SUMMARY"
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
+
+  # ──────────────────────────────────────────────────────────────
+  # Job 2: apply to prod — gated by required reviewers on "production".
+  # Re-plans against current prod state and applies.
+  # ──────────────────────────────────────────────────────────────
+  prod-apply:
+    name: Deploy Prod
+    needs: dev-and-prod-plan
+    runs-on: ubuntu-latest
+    environment: production   # required reviewers -> manual approval button
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: us-east-1
+
+      - name: Init
+        run: terraform -chdir=terraform init -input=false
+
+      - name: Apply (prod)
+        run: terraform -chdir=terraform apply -input=false -auto-approve -var-file=envs/prod.tfvars
