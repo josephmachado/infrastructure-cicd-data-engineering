@@ -43,7 +43,7 @@ resource "aws_iam_role" "github_actions" {
       Action    = "sts:AssumeRoleWithWebIdentity"
       Condition = {
         StringLike = {
-          "token.actions.githubusercontent.com:sub" = "repo:josephmachado/infratstructure-cicd-data-engineering:*"
+          "token.actions.githubusercontent.com:sub" = "repo:josephmachado/infrastructure-cicd-data-engineering:*"
         }
       }
     }]
