@@ -7,9 +7,9 @@ terraform {
   }
   backend "s3" {
     bucket  = "jkm-cicd-iac-state"
-    key     = "infra/terraform.tfstate"
     region  = "us-east-1"
     encrypt = true
+    # key supplied at init via -backend-config (dev/... vs prod/...)
   }
   required_version = ">= 1.2"
 }
@@ -49,10 +49,12 @@ data "aws_ami" "debian" {
 # ----------------------------------------
 # IAM Role (EC2 -> S3 access)
 # Profile -> Role(s) -> Policy(s)
+# Names are suffixed with the environment so dev and prod don't collide
+# (IAM role/profile names are account-unique).
 # ----------------------------------------
 
 resource "aws_iam_role" "ec2" {
-  name = "ec2-s3-role"
+  name = "ec2-s3-role-${var.environment}"
 
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
@@ -86,7 +88,7 @@ resource "aws_iam_role_policy" "s3_access" {
 }
 
 resource "aws_iam_instance_profile" "ec2" {
-  name = "ec2-s3-profile"
+  name = "ec2-s3-profile-${var.environment}"
   role = aws_iam_role.ec2.name
 }
 
@@ -107,5 +109,8 @@ resource "aws_instance" "this" {
     pip3 install boto3 --break-system-packages
   EOF
 
+  tags = {
+    Name        = "data-pipeline-${var.environment}"
+    Environment = var.environment
+  }
 }
-
