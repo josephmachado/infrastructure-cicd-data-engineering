@@ -48,7 +48,7 @@ We use GitHub environment to force manual review. Create this by going to `setti
 
 Add a review rule requiring atleast one manual review.
 
-![Add a production review rule for manual review](,./production-review_rule.png)
+![Add a production review rule for manual review](./production-review_rule.png)
 
 ## CI checks 
 
