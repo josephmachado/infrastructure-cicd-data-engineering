@@ -1,0 +1,50 @@
+name: CI
+
+on:
+  pull_request:
+    branches:
+      - main
+    types: [opened, synchronize, reopened]
+
+jobs:
+  # ──────────────────────────────────────────────────────────────
+  # 1. PR: static checks + plan + policy  (NO apply)
+  # ──────────────────────────────────────────────────────────────
+  validate-and-plan:
+    name: Validate & Plan
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+      - uses: actions/checkout@v4
+ 
+      # --- static checks ---
+      - name: Init
+        run: terraform -chdir=terraform init -input=false
+ 
+      - name: Format check
+        run: terraform -chdir=terraform fmt -check -recursive 
+ 
+      - name: Validate
+        run: terraform -chdir=terraform validate -var-file=envs/dev.tfvars
+ 
+      # --- plan (against staging state for review) ---
+      - name: Plan
+        id: plan
+        run: |
+          terraform plan -chdir=terraform -input=false -out=plan.tfplan -var-file=envs/dev.tfvars -no-color | tee plan.txt
+ 
+      # --- post the plan on the PR ---
+      - name: Comment plan on PR
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const plan = fs.readFileSync('plan.txt', 'utf8');
+            const body = `### Terraform Plan\n\`\`\`\n${plan.slice(0, 60000)}\n\`\`\``;
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body,
+            });
