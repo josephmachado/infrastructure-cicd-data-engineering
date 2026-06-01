@@ -58,7 +58,7 @@ jobs:
         with:
           script: |
             const fs = require('fs');
-            const plan = fs.readFileSync('terraform/plan.txt', 'utf8');
+            const plan = fs.readFileSync('plan.txt', 'utf8');
             const body = `### Terraform Plan (dev)\n\`\`\`\n${plan.slice(0, 60000)}\n\`\`\``;
             github.rest.issues.createComment({
               issue_number: context.issue.number,
