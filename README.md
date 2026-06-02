@@ -9,7 +9,7 @@
 
 # README 
 
-Code for the blog: [](https://www.startdataengineering.com/post/infrastructure-cicd-data-engineering/)
+Code for the blog: [How to set up CI/CD for data infrastructure](https://www.startdataengineering.com/post/infrastructure-cicd-data-engineering/)
 
 ## Setup 
 
